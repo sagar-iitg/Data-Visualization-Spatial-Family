@@ -1,0 +1,393 @@
+---
+title: 'Data Visualization : Spatial Family'
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+
+***
+**Choropleth Map**
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(rjson)
+library(ggplot2)
+
+url <- 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json'
+counties <- rjson::fromJSON(file=url)
+url2<- "https://raw.githubusercontent.com/plotly/datasets/master/fips-unemp-16.csv"
+df <- read.csv(url2, colClasses=c(fips="character"))
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showlakes = TRUE,
+  lakecolor = toRGB('white')
+)
+fig <- plot_ly()
+fig <- fig %>% add_trace(
+  type="choropleth",
+  geojson=counties,
+  locations=df$fips,
+  z=df$unemp,
+  colorscale="Viridis",
+  zmin=0,
+  zmax=12,
+  marker=list(line=list(
+    width=0)
+  )
+)
+fig <- fig %>% colorbar(title = "Unemployment Rate (%)")
+fig <- fig %>% layout(
+  title = "2016 US Unemployment by County"
+)
+
+fig <- fig %>% layout(
+  geo = g
+)
+
+fig
+
+
+
+```
+
+\newpage
+***
+**Proportional Symbol Map**
+
+
+
+```{r message=FALSE, warning=FALSE}
+# Library
+library(cartography)
+
+library(sp)
+
+# Upload data attached with the package.
+data(nuts2006)
+
+# Now we have a geospatial object called nuts2.spdf containing the shape of european regions. We can plot it with the plot function.
+# summary(nuts2.spdf)
+
+# We also have a dataframe with information concerning every region.
+# head(nuts2.df)
+# Both object have a first column "id" that makes the link between them.
+
+# Plot Europe
+plot(nuts0.spdf, border = NA, col = NA, bg = "#A6CAE0")
+plot(world.spdf, col = "#E3DEBF", border = NA, add = TRUE)
+plot(nuts0.spdf, col = "#D1914D", border = "grey80",  add = TRUE)
+
+# Add circles proportional to the total population
+propSymbolsLayer(spdf = nuts0.spdf, df = nuts0.df,
+                 var = "pop2008", symbols = "circle", col = "#920000",
+                 legend.pos = "right", legend.title.txt = "Total\npopulation (2008)",
+                 legend.style = "c")
+
+# Add titles, legend...
+layoutLayer(title = "Countries Population in Europe",
+            author = "cartography", sources = "Eurostat, 2008",
+            scale = NULL, south = TRUE)
+
+
+
+```
+
+
+\newpage
+***
+
+**Prism Map**
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+
+library(mapdeck)
+set_token(Sys.getenv("MAPBOX"))
+#crash_data = read.csv("https://git.io/geocompr-mapdeck")
+
+crash_data = read.csv("prism.csv")
+crash_data = na.omit(crash_data)
+ms = mapdeck_style("dark")
+mapdeck(style = ms, pitch = 45, location = c(0, 52), zoom = 1000) %>%
+add_grid(data = crash_data, lat = "lat", lon = "lng", cell_size = 3000,
+         elevation_scale = 100, layer_id = "grid_layer",
+         colour_range = viridisLite::plasma(6))
+
+
+
+
+```
+
+
+
+\newpage
+***
+
+**Dot Map**
+
+```{r message=FALSE, warning=FALSE}
+library(plotly)
+# Loading the Dataset
+df <- read.csv('us_cities.csv')
+
+df$q <- with(df, cut(pop, quantile(pop)))
+
+levels(df$q) <- paste(c("1st", "2nd", "3rd", "4th", "5th"), "Quantile")
+
+df$q <- as.ordered(df$q)
+
+# Defining the geo location for plotting
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  
+  showland = TRUE,
+  landcolor = toRGB("gray85"),
+  subunitwidth = 1,
+  countrywidth = 1,
+  subunitcolor = toRGB("white"),
+  countrycolor = toRGB("white")
+)
+
+# Plotting the Map
+plot_geo(df, locationmode = 'USA-states', sizes = c(1, 250))%>% add_markers(
+    x = ~lon, y = ~lat, size = ~pop, color = ~q, hoverinfo = "text",
+    text = ~paste(df$name, "<br />", df$pop/1e6, " million")
+  )%>% layout(title = '2014 US city populations', geo = g)
+
+```
+
+
+
+
+
+\newpage
+***
+**2nd Method**
+**Dot Map**
+```{r}
+library(maps)
+map(database="world")
+faketrace <- read.delim("C:/Users/Sagar/Desktop/Folder/Data Visualization/6/Final/Dot_map/faketrace.txt")
+
+#map with lines
+map(database="world", col="#cccccc")
+
+lines(faketrace$longitude, faketrace$latitude, col="#bb4cd4", lwd=2)
+
+symbols(faketrace$longitude,
+        faketrace$latitude,
+        lwd=2,
+        bg="#bb4cd4",
+        fg="#ffffff",
+        circles=rep(1, length(faketrace$longitude)),
+        inches=0.08,
+        add=TRUE)
+
+text(faketrace$longitude+15, faketrace$latitude-5, faketrace$stop, cex=1)
+
+
+
+```
+
+
+A dot distribution map, or dot density map, is a map type that uses a dot symbol to show the presence of a feature or a phenomenon. Dot maps rely on a visual scatter to show spatial pattern.
+
+
+
+
+\newpage
+***
+
+**Isarithmic Map**
+
+
+```{r message=FALSE, warning=FALSE}
+
+df <- scale(mtcars)
+
+
+
+library(ComplexHeatmap)
+Heatmap(df, 
+        name = "mtcars", #title of legend
+        column_title = "Variables", row_title = "Samples",
+        row_names_gp = gpar(fontsize = 7) # Text size for row names
+        )
+
+```
+
+
+
+
+
+
+\newpage
+***
+
+**Flow Map**
+
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+
+
+library(maps)
+library(geosphere)
+library(dplyr)
+library(ggplot2)
+library(rworldmap)
+library(plyr)
+library(data.table)
+library(ggthemes)
+
+
+worldMap <- getMap()
+mapworld_df <- fortify( worldMap )
+
+
+
+
+airports <- read.csv("airports.csv", as.is=TRUE, header=TRUE)
+
+flights <- read.csv("PEK-openflights-export-2012-03-19.csv", as.is=TRUE, header=TRUE)
+
+airport_locations <- airports[, c("IATA","longitude", "latitude")]
+
+
+
+airport_locations <- airports[, c("IATA","longitude", "latitude")]
+
+# aggregate number of flights (frequency of flights per pair)
+flights.ag <- ddply(flights, c("From","To"), function(x) count(x$To))
+
+
+# Link airport lat  long to origin and destination
+OD <- left_join(flights.ag, airport_locations, by=c("From"="IATA") )
+OD <- left_join(OD, airport_locations, by=c("To"="IATA") )
+OD$id <-as.character(c(1:nrow(OD))) #create and id for each pair
+
+
+
+
+# get location of Origin and destinations airports
+setDT(OD) # set OD as a data.table for faster data manipulation
+beijing.loc <- OD[ From== "PEK", .(longitude.x, latitude.x)][1] # Origin
+dest.loc <- OD[ , .(longitude.y, latitude.y)] # Destinations
+
+# calculate routes between Beijing (origin) and other airports (destinations)
+routes <- gcIntermediate(beijing.loc, dest.loc, 100, breakAtDateLine=FALSE, addStartEnd=TRUE, sp=TRUE)
+#class(routes) # SpatialLines object
+
+
+# Convert a SpatialLines object into SpatialLinesDataFrame, so we can fortify and use it in ggplot
+# create empty data frate  
+ids <- data.frame()
+# fill data frame with IDs for each line
+for (i in (1:length(routes))) {         
+  id <- data.frame(routes@lines[[i]]@ID)
+  ids <- rbind(ids, id)  }
+
+colnames(ids)[1] <- "ID" # rename ID column
+
+# convert SpatialLines into SpatialLinesDataFrame using IDs as the data frame
+routes <- SpatialLinesDataFrame(routes, data = ids, match.ID = T)
+
+# Fortify routes (convert to data frame)  +++  join attributes
+routes_df <- fortify(routes, region= "ID") # convert into something ggplot can plot
+gcircles <- left_join(routes_df, OD, by= ("id"))
+#head(gcircles)
+
+### Recenter ####
+
+center <- 115 # positive values only - US centered view is 260
+
+# shift coordinates to recenter great circles
+gcircles$long.recenter <-  ifelse(gcircles$long  < center - 180 , gcircles$long + 360, gcircles$long) 
+
+# shift coordinates to recenter worldmap
+worldmap <- map_data ("world")
+worldmap$long.recenter <-  ifelse(worldmap$long  < center - 180 , worldmap$long + 360, worldmap$long)
+
+### Function to regroup split lines and polygons
+# takes dataframe, column with long and unique group variable, returns df with added column named group.regroup
+RegroupElements <- function(df, longcol, idcol){  
+  g <- rep(1, length(df[,longcol]))
+  if (diff(range(df[,longcol])) > 300) {          # check if longitude within group differs more than 300 deg, ie if element was split
+    d <- df[,longcol] > mean(range(df[,longcol])) # we use the mean to help us separate the extreme values
+    g[!d] <- 1     # some marker for parts that stay in place (we cheat here a little, as we do not take into account concave polygons)
+    g[d] <- 2      # parts that are moved
+  }
+  g <-  paste(df[, idcol], g, sep=".") # attach to id to create unique group variable for the dataset
+  df$group.regroup <- g
+  df
+}
+
+### Function to close regrouped polygons
+# takes dataframe, checks if 1st and last longitude value are the same, if not, inserts first as last and reassigns order variable
+ClosePolygons <- function(df, longcol, ordercol){
+  if (df[1,longcol] != df[nrow(df),longcol]) {
+    tmp <- df[1,]
+    df <- rbind(df,tmp)
+  }
+  o <- c(1: nrow(df))  # rassign the order variable
+  df[,ordercol] <- o
+  df
+}
+
+# now regroup
+gcircles.rg <- ddply(gcircles, .(id), RegroupElements, "long.recenter", "id")
+worldmap.rg <- ddply(worldmap, .(group), RegroupElements, "long.recenter", "group")
+
+# close polys
+worldmap.cp <- ddply(worldmap.rg, .(group.regroup), ClosePolygons, "long.recenter", "order")  # use the new #grouping var
+
+
+
+# Flat map
+ggplot() +
+  geom_polygon(data=worldmap.cp, aes(long.recenter,lat,group=group.regroup), size = 0.2, fill="#f9f9f9", color = "grey65") +
+  geom_line(data= gcircles.rg, aes(long.recenter,lat,group=group.regroup, color=freq), size=0.4, alpha= 0.5) +
+  scale_colour_distiller(palette="Reds", name="Frequency", guide = "colorbar") +
+  theme_map()+
+  ylim(-60, 90) +
+  coord_equal()
+
+
+# Spherical Map
+ggplot() +
+  geom_polygon(data=worldmap.cp, aes(long.recenter,lat,group=group.regroup), size = 0.2, fill="#f9f9f9", color = "grey65") +
+  geom_line(data= gcircles.rg, aes(long.recenter,lat,group=group.regroup, color=freq), size=0.4, alpha= 0.5) +
+  scale_colour_distiller(palette="Reds", name="Frequency", guide = "colorbar") +
+  # Spherical element
+  scale_y_continuous(breaks = (-2:2) * 30) +
+  scale_x_continuous(breaks = (-4:4) * 45) +
+  coord_map("ortho", orientation=c(61, 90, 0)) 
+
+
+
+
+```
+
+
+
+
+
